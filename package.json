@@ -1,0 +1,33 @@
+{
+  "name": "video",
+  "version": "1.0.0",
+  "description": "Video web server",
+  "main": "video_svr.js",
+  "dependencies" : {
+    "async": "latest",
+    "clone": "latest",
+    "archiver": "latest",
+    "nodemailer": "latest",
+    "http": "latest",
+    "recursive-readdir": "latest",
+    "request": "latest",
+    "moment": "latest",
+    "winston": "latest",
+    "mv": "latest"
+  },
+  "config" : { 
+    "port" : "3053",
+    "PORT_DB" : "3052",
+    "LL": "debug"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node video_svr.js"
+  },
+  "keywords": [
+    "video",
+    "mackall"
+  ],
+  "author": "Tom Mackall",
+  "license": "ISC"
+}
