@@ -14,12 +14,12 @@ const mv = require('mv');
 var exports = module.exports = {};
 
 // globals
-const LL = process.env.LL || 'info';
+const LL = process.env.LL || process.env.npm_package_config_ll || 'warning';
 const PORT = process.env.PORT || process.env.npm_package_config_port || '3003';
 const PORT_DB = process.env.PORT_DB || process.env.npm_package_config_port_db || '3002';
-const DIR_VIDEO_MOVEMENT_STORAGE = process.env.DIR_VIDEO_MOVEMENT_STORAGE || '/storage';
-const DIR_VIDEO_STORAGE = process.env.DIR_VIDEO_STORAGE || '/storage_d';
-const IP_DB = '0.0.0.0';
+const IP_DB = process.env.IP_DB || process.env.npm_package_config_ip_db || '192.168.0.21';
+const DIR_VIDEO_MOVEMENT_STORAGE = process.env.DIR_VIDEO_MOVEMENT_STORAGE || '/video-movement';
+const DIR_VIDEO_STORAGE = process.env.DIR_VIDEO_STORAGE || '/video-files';
 
 
 // --------------------
@@ -33,16 +33,7 @@ var logger = new (winston.Logger)({
 });
 
 logger.debug('port: ' + PORT);
-// --------------------
-// ip address - get it
-// --------------------
-/*
-var hostname = null;
-camLib.ipGet(function(res) {
-  hostname = res;
-});
-*/
-      
+logger.debug('log level: ' + LL);
 
 // db server url - this assumes that we are on the
 // same host
@@ -116,10 +107,12 @@ function storeVideoMovement(lFiles, callback) {
   });
 }
 
-// ----------------------------------------
-// identifyVideosWithMovement() - matches
-// stored video with movement timestamps.
-// ----------------------------------------
+// -----------------------------------------------------
+// identifyVideosWithMovement() 
+//
+//    - matches stored video with movement timestamps.
+//
+// -----------------------------------------------------
 function identifyVideosWithMovement(movements, fProcessMpegs, callback) {
   if (typeof callback === 'undefined') {
     callback = fProcessMpegs;
@@ -229,7 +222,7 @@ function identifyVideosWithMovement(movements, fProcessMpegs, callback) {
             }
         });
         moveVideoFiles(lFilesToMove, function(err){
-          console.log(lDbRecsToUpdate);
+          logger.info(lDbRecsToUpdate);
           updateToProcessed(lDbRecsToUpdate, callback);
           cb();
         });
@@ -242,15 +235,17 @@ function identifyVideosWithMovement(movements, fProcessMpegs, callback) {
   ]);
 }
 
-// ----------------------------------------
-// getToBeProcessed() - gets movement
-// records from the database.
-// db-svr - get movements that need to be
-// processed (i.e. move the video with 
-// movement to a storage location and
-// mark the movements "processed" in the
-// database.)
-// ----------------------------------------
+// ----------------------------------------------------------
+// getToBeProcessed() 
+//
+//    - gets movement
+//      records from the database.
+//    - db-svr - get movements that need to be
+//        processed (i.e. move the video with 
+//        movement to a storage location and
+//        mark the movements "processed" in the
+//        database.)
+// ----------------------------------------------------------
 function getToBeProcessed(callback) {
   var url = URL_DB + '/db/unprocessed';
   logger.debug(url);
@@ -266,6 +261,12 @@ function getToBeProcessed(callback) {
   });
 }
 
+// ----------------------------------------------------------
+// updateToProcessed() 
+//
+//  - updates the db image record to "processed"
+//
+// ----------------------------------------------------------
 function updateToProcessed(lRecs, callback) {
   var url = URL_DB + '/db/processed';
   logger.debug(url);
@@ -283,11 +284,20 @@ function updateToProcessed(lRecs, callback) {
   });
 }
 
-// ----------------------------
+// --------------------------------------------------
 //
 // web app - video 
 //
-// ----------------------------
+//   - purpose: to put video/mp4 files with detected
+//   movement into a separate 
+//   dir so that they can viewed easily.
+//
+//   - vlc will store all video
+//   on the data drive. This module's job is to
+//   correlate the camera movement triggers to the 
+//   stored video and move it to the movement dir.
+//
+// --------------------------------------------------
 var server = http.createServer(requestProcess);
 
 function requestProcess(request, response) {
@@ -310,19 +320,19 @@ function requestProcess(request, response) {
       logger.error(err);
       valRet.text = err;
     });
-    var tmpReq = 'Message received: ' + url;
+    let tmpReq = 'Message received: ' + url;
 
     async.series([
+      // directory - create it if it doesn't exist
       function(cb) {
         createMovementDir(function(err) {
           cb(err);
         });
       },
       function(cb) {
-        //
         // video request - return the movement
         if (url == '/video/movement' &&  method == 'GET') {
-          logger.debug('Video check');
+          logger.debug('Video movement check');
           getToBeProcessed(function(err, res) {
             if (err) {
               logger.error(err);
@@ -339,6 +349,22 @@ function requestProcess(request, response) {
               });
             }
           });
+        // image store
+        } else if (url == '/video-files' &&  method == 'POST') {
+          logger.debug('Video post');
+          logger.debug(DIR_VIDEO_STORAGE);
+          if (fs.existsSync(DIR_VIDEO_STORAGE)) {
+            logger.info(fs.readdirSync(DIR_VIDEO_STORAGE));
+          }
+          cb();
+        // video files list
+        } else if (url == '/video-files' &&  method == 'GET') {
+          logger.debug('Video files - list them');
+          logger.debug(DIR_VIDEO_STORAGE);
+          if (fs.existsSync(DIR_VIDEO_STORAGE)) {
+            logger.info(fs.readdirSync(DIR_VIDEO_STORAGE));
+          }
+          cb();
         // video movement - save and clean  
         } else if (url == '/video/movement/process' &&  method == 'PUT') {
           logger.debug('Video move and cleanup');
@@ -373,10 +399,8 @@ function requestProcess(request, response) {
           cb();
         }
       },
+      // http response
       function(cb) {
-
-        //
-        // response - send it
         response.setHeader('Content-Type', 'application/json');
         valRet.status = response.statusCode;
     
@@ -391,7 +415,6 @@ function requestProcess(request, response) {
         cb();
       },
     ]);
-
   });
 }
 

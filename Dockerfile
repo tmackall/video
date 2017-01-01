@@ -1,8 +1,9 @@
 FROM resin/rpi-raspbian:jessie-20160831  
 FROM hypriot/rpi-node:slim
 
-ARG PORT=3050
+ARG PORT=3003
 ARG DIR_VIDEO=/srv/video
+ARG DIR_IMAGES=/mnt/usbdrive/video-files
 
 # dirs - create all that are needed
 RUN mkdir -p ${DIR_VIDEO} && \
@@ -15,6 +16,7 @@ WORKDIR ${DIR_VIDEO}
 COPY package.json ${DIR_VIDEO}
 RUN npm install .
 
+COPY video_svr.js ${DIR_VIDEO}
 # Bundle app source
 COPY . ${DIR_VIDEO}
 

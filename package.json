@@ -8,7 +8,6 @@
     "clone": "latest",
     "archiver": "latest",
     "nodemailer": "latest",
-    "http": "latest",
     "recursive-readdir": "latest",
     "request": "latest",
     "moment": "latest",
@@ -16,9 +15,10 @@
     "mv": "latest"
   },
   "config" : { 
-    "port" : "3053",
-    "PORT_DB" : "3052",
-    "LL": "debug"
+    "port" : "3003",
+    "port_db" : "3002",
+    "ip_db" : "192.168.0.21",
+    "ll": "info"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",

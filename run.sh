@@ -1,3 +1,6 @@
 #!/bin/bash
-
-sudo docker run --name video_web_server -it -p 3053:3053 video-svr:1.0.0 
+NAME='video_web_server'
+docker stop ${NAME}
+docker rm  -v ${NAME}
+sudo docker run --name ${NAME}  -d -v /mnt/usbdrive/video-files:/video-files \
+  -v /mnt/usbdrive/video-movement:/video-movement -it -p 3003:3003 video-svr
